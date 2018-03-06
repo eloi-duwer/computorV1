@@ -1,0 +1,22 @@
+<!DOCTYPE=HTML>
+
+<head>
+<title>Solveur d'equations du second degre</title>
+</head>
+<body>
+<input type="text" id="input_equation" placeholder="Entrez une equation ici" style="width: 500px"></input>
+<button id="launch_resolution">Go!</button><br/>
+<span id="res"></span>
+<script>
+	document.getElementById("launch_resolution").onclick = function(){
+		var equation = document.getElementById("input_equation").value;
+		equation = equation.split(" ").join("").split("=");
+		if (equation.length == 1) {
+			document.getElementById("res").innerHTML = "Erreur: pas de signe \"=\"";
+			return;
+		}
+		var gauche = equation[0].split("+");
+		var droite = equation[1].split("+");
+	};
+</script>
+</body>
