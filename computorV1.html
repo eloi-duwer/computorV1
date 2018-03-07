@@ -1,22 +1,121 @@
-<!DOCTYPE=HTML>
+<!DOCTYPE html>
 
 <head>
-<title>Solveur d'equations du second degre</title>
+<title>computorV1</title>
 </head>
 <body>
-<input type="text" id="input_equation" placeholder="Entrez une equation ici" style="width: 500px"></input>
+<input type="text" id="input_equation" placeholder="Type an equation" style="width: 500px"></input>
 <button id="launch_resolution">Go!</button><br/>
 <span id="res"></span>
 <script>
+
+	var res = document.getElementById("res");
+	function getExponent(str) {
+		str = str.split("^");
+		return (str[1]);
+	}
+
+	function parseEquation(str) {
+		var ret = [];
+		str = str.replace("-", "+-");
+		str = str.split("+");
+		str.forEach(function(el, i) {
+			el = el.split("X");
+			if (el.length != 1) {
+				var nb = +(el[0].split("*")[0]);
+				var exp = el[1].split("^");
+				exp = +(exp[exp.length - 1]);
+				ret[i] = {nb: nb, exp: exp};
+			}
+			else
+				ret[i] = {nb: +el[0], exp:0};
+		});
+		return (ret);
+	}
+
 	document.getElementById("launch_resolution").onclick = function(){
 		var equation = document.getElementById("input_equation").value;
 		equation = equation.split(" ").join("").split("=");
 		if (equation.length == 1) {
-			document.getElementById("res").innerHTML = "Erreur: pas de signe \"=\"";
+			res.innerHTML = "Error: no \"=\" found";
 			return;
 		}
-		var gauche = equation[0].split("+");
-		var droite = equation[1].split("+");
+		var gauche = parseEquation(equation[0]);
+		var droite = parseEquation(equation[1]);
+		var polynome = [0, 0, 0];
+		gauche.forEach(function(el) {
+			if (el.nb != 0) {
+				if (typeof(polynome[el.exp]) == "undefined")
+					polynome[el.exp] = 0;
+				polynome[el.exp] += el.nb;
+			}
+		});
+		droite.forEach(function(el) {
+			if (el.nb != 0) {
+				if (typeof(polynome[el.exp]) == "undefined")
+					polynome[el.exp] = 0;
+				polynome[el.exp] -= el.nb;
+			}
+		});
+		var str = "Reduced form:";
+		var highest_degree = -1;
+		polynome.forEach(function(nb, i){
+			if (typeof(nb) == undefined) {
+				polynome[i] = 0;
+				nb = 0;
+			}
+			if (nb != 0) {
+				str += " ";
+				if (nb >= 0 && highest_degree != -1)
+					str += "+ ";
+				str += nb;
+				if (i == 1)
+					str += "X";
+				if ( i >= 2)
+					str += "*X^" + i;
+				highest_degree = i;
+			}
+		});
+		str += " = 0<br />";
+		str+= "Polynomial degree: " + highest_degree + "<br/>";
+		if (highest_degree >= 3) {
+			str += "Polynomial degree is strictly greater than 2.";
+		}
+		else if (highest_degree == 2) {
+			var a = polynome[2];
+			var b = polynome[1];
+			var c = polynome[0];
+			var delta = (b * b) - (4 * a * c);
+			str += "Discriminant is " + delta + "<br/>";
+			if (delta > 0) {
+				str += "Discriminant is strictly positive, the two solutions are: <br/>";
+				var solution = (-b - Math.sqrt(delta)) / (2 * a);
+				str += solution.toFixed(3) + "<br/>";
+				solution = (-b + Math.sqrt(delta)) / (2 * a);
+				str += solution.toFixed(3) + "<br/>";
+			}
+			else if (delta == 0) {
+				str += "Discriminant is 0, the solution is: <br />";
+				var solution = -b / (2 * a);
+				str += solution.toFixed(2) + "<br/>";
+			}
+			else {
+				str += "Discriminant is strictly negative, the two solutions are: <br/>";
+				var real_part = -b / (2 * a);
+				var imaginary_part = Math.sqrt(-delta) / (2 * a);
+				str += real_part.toFixed(3) + " - " + imaginary_part.toFixed(3) + " * i<br/>";
+				str += real_part.toFixed(3) + " + " + imaginary_part.toFixed(3) + " * i<br/>";
+			}
+		}
+		else if (highest_degree == 1) {
+			var a = polynome[1];
+			var b = polynome[0];
+			str += "The solution is: " + +(-b / a).toFixed(3) + "<br/>";
+		}
+		else if (highest_degree == 0) {
+			str += "The reduced form of the equation should be easy enough to be solved without my help :p<br/>";
+		}
+		res.innerHTML = str;
 	};
 </script>
 </body>
