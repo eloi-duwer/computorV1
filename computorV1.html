@@ -4,8 +4,7 @@
 <title>computorV1</title>
 </head>
 <body>
-<input type="text" id="input_equation" placeholder="Type an equation" style="width: 500px"></input>
-<button id="launch_resolution">Go!</button><br/>
+<input type="text" id="input_equation" placeholder="Type an equation" style="width: 500px"></input><br/>
 <span id="res"></span>
 <script>
 
@@ -17,27 +16,106 @@
 
 	function parseEquation(str) {
 		var ret = [];
-		str = str.replace("-", "+-");
+		str = str.replace(new RegExp('-', 'g'), "+-");
 		str = str.split("+");
 		str.forEach(function(el, i) {
 			el = el.split("X");
-			if (el.length != 1) {
-				var nb = +(el[0].split("*")[0]);
-				var exp = el[1].split("^");
-				exp = +(exp[exp.length - 1]);
+			if (el.length > 1) {
+				var nb, exp;
+				if (el[0].length == 0)
+					nb = 1;
+				else if (el[0].length == 1 && el[0][0] == '-')
+					nb = -1;
+				else
+					nb = +(el[0].split("*")[0]);
+				if (el[1].length == 0)
+					exp = 1;
+				else {
+					exp = el[1].split("^");
+					exp = +(exp[exp.length - 1]);
+				}
 				ret[i] = {nb: nb, exp: exp};
 			}
+			else if (el[0].length == 1 && el[0][0] == '-')
+				ret[i] = {nb: 0, exp: 0};
 			else
 				ret[i] = {nb: +el[0], exp:0};
 		});
 		return (ret);
 	}
 
-	document.getElementById("launch_resolution").onclick = function(){
+	function printReducedForm(polynome) {
+		var str = "Reduced form:";
+		var highest_degree = -1;
+		polynome.forEach(function(nb, i){
+			if (typeof(nb) == undefined) {
+				polynome[i] = 0;
+				nb = 0;
+			}
+			if (nb != 0) {
+				str += " ";
+				if (nb >= 0 && highest_degree != -1)
+					str += "+ ";
+				str += nb;
+				if (i >= 1)
+					str += " * X";
+				if ( i >= 2)
+					str += " ^ " + i;
+				highest_degree = i;
+			}
+		});
+		if (highest_degree == -1) {
+			str += " 0";
+			highest_degree = 0;
+		}
+		str += " = 0<br />";
+		return ({str: str, highest_degree: highest_degree});
+	}
+
+	function solve2DegreeEquation(polynome, str) {
+		var a = polynome[2];
+		var b = polynome[1];
+		var c = polynome[0];
+		var delta = (b * b) - (4 * a * c);
+		str += "Discriminant is " + delta + "<br/>";
+		if (delta > 0) {
+			str += "Discriminant is strictly positive, the two solutions are: <br/>";
+			var solution = (-b - Math.sqrt(delta)) / (2 * a);
+			str += solution.toFixed(3) + "<br/>";
+			solution = (-b + Math.sqrt(delta)) / (2 * a);
+			str += solution.toFixed(3) + "<br/>";
+		}
+		else if (delta == 0) {
+			str += "Discriminant is 0, the solution is: <br />";
+			var solution = -b / (2 * a);
+			str += solution.toFixed(2) + "<br/>";
+		}
+		else {
+			str += "Discriminant is strictly negative, the two solutions are: <br/>";
+			var real_part = -b / (2 * a);
+			var imaginary_part = Math.sqrt(-delta) / (2 * a);
+			if (imaginary_part < 0)
+				imaginary_part = -imaginary_part;
+			str += real_part.toFixed(3) + " - " + imaginary_part.toFixed(3) + " * i<br/>";
+			str += real_part.toFixed(3) + " + " + imaginary_part.toFixed(3) + " * i<br/>";
+		}
+		return (str);
+	}
+
+	document.getElementById("input_equation").onchange = function(){
 		var equation = document.getElementById("input_equation").value;
 		equation = equation.split(" ").join("").split("=");
+		var regex = /^[+-]?((\d+(\.\d*)?)|(\.\d+))?((\*(?=X))?X(\^\d+)?)?([+-]((\d+(\.\d*)?)|(\.\d+))?((\*(?=X))?X(\^\d+)?)?)*$/;
 		if (equation.length == 1) {
 			res.innerHTML = "Error: no \"=\" found";
+			return;
+		}
+		if (equation[0].search(regex) == -1) {
+			res.innerHTML = "Error: the format of the left part is invalid";
+			return;
+		}
+		if (equation[1].search(regex) == -1) {
+			res.innerHTML = "Error: the format of the right part is invalid";
 			return;
 		}
 		var gauche = parseEquation(equation[0]);
@@ -57,63 +135,21 @@
 				polynome[el.exp] -= el.nb;
 			}
 		});
-		var str = "Reduced form:";
-		var highest_degree = -1;
-		polynome.forEach(function(nb, i){
-			if (typeof(nb) == undefined) {
-				polynome[i] = 0;
-				nb = 0;
-			}
-			if (nb != 0) {
-				str += " ";
-				if (nb >= 0 && highest_degree != -1)
-					str += "+ ";
-				str += nb;
-				if (i == 1)
-					str += "X";
-				if ( i >= 2)
-					str += "*X^" + i;
-				highest_degree = i;
-			}
-		});
-		str += " = 0<br />";
+		var str = printReducedForm(polynome);
+		var highest_degree = str.highest_degree;
+		str = str.str;
 		str+= "Polynomial degree: " + highest_degree + "<br/>";
-		if (highest_degree >= 3) {
-			str += "Polynomial degree is strictly greater than 2.";
-		}
-		else if (highest_degree == 2) {
-			var a = polynome[2];
-			var b = polynome[1];
-			var c = polynome[0];
-			var delta = (b * b) - (4 * a * c);
-			str += "Discriminant is " + delta + "<br/>";
-			if (delta > 0) {
-				str += "Discriminant is strictly positive, the two solutions are: <br/>";
-				var solution = (-b - Math.sqrt(delta)) / (2 * a);
-				str += solution.toFixed(3) + "<br/>";
-				solution = (-b + Math.sqrt(delta)) / (2 * a);
-				str += solution.toFixed(3) + "<br/>";
-			}
-			else if (delta == 0) {
-				str += "Discriminant is 0, the solution is: <br />";
-				var solution = -b / (2 * a);
-				str += solution.toFixed(2) + "<br/>";
-			}
-			else {
-				str += "Discriminant is strictly negative, the two solutions are: <br/>";
-				var real_part = -b / (2 * a);
-				var imaginary_part = Math.sqrt(-delta) / (2 * a);
-				str += real_part.toFixed(3) + " - " + imaginary_part.toFixed(3) + " * i<br/>";
-				str += real_part.toFixed(3) + " + " + imaginary_part.toFixed(3) + " * i<br/>";
-			}
-		}
+		if (highest_degree >= 3)
+			str += "Polynomial degree is strictly greater than 2, can't solve.";
+		else if (highest_degree == 2)
+			str = solve2DegreeEquation(polynome, str);
 		else if (highest_degree == 1) {
 			var a = polynome[1];
 			var b = polynome[0];
 			str += "The solution is: " + +(-b / a).toFixed(3) + "<br/>";
 		}
 		else if (highest_degree == 0) {
-			str += "The reduced form of the equation should be easy enough to be solved without my help :p<br/>";
+			str += "There is no X in the equation, there is no solution!<br/>";
 		}
 		res.innerHTML = str;
 	};
