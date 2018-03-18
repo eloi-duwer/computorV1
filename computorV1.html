@@ -14,6 +14,31 @@
 		return (str[1]);
 	}
 
+	/*
+	**	Replacement for Math.sqrt, which can be considered as cheat for this project.
+	*/
+
+	function sqrt_dichotomy(nb, nb_while) {
+		var begin = 0;
+		var end = nb;
+		var res = (begin + end) / 2;
+		var count = 0;
+		while (count < nb_while) {
+			if (res * res > nb) {
+				end = res;
+				res = (begin + end) / 2;
+			}
+			else if (res * res < nb) {
+				begin = res;
+				res = (begin + end) / 2;
+			}
+			else
+				return res;
+			++count;
+		}
+		return (res);
+	}
+	
 	function parseEquation(str) {
 		var ret = [];
 		str = str.replace(new RegExp('-', 'g'), "+-");
@@ -80,9 +105,9 @@
 		str += "Discriminant is " + delta + "<br/>";
 		if (delta > 0) {
 			str += "Discriminant is strictly positive, the two solutions are: <br/>";
-			var solution = (-b - Math.sqrt(delta)) / (2 * a);
+			var solution = (-b - sqrt_dichotomy(delta, 100)) / (2 * a);
 			str += solution.toFixed(3) + "<br/>";
-			solution = (-b + Math.sqrt(delta)) / (2 * a);
+			solution = (-b + sqrt_dichotomy(delta, 100)) / (2 * a);
 			str += solution.toFixed(3) + "<br/>";
 		}
 		else if (delta == 0) {
@@ -93,7 +118,7 @@
 		else {
 			str += "Discriminant is strictly negative, the two solutions are: <br/>";
 			var real_part = -b / (2 * a);
-			var imaginary_part = Math.sqrt(-delta) / (2 * a);
+			var imaginary_part = sqrt_dichotomy(-delta, 100) / (2 * a);
 			if (imaginary_part < 0)
 				imaginary_part = -imaginary_part;
 			str += real_part.toFixed(3) + " - " + imaginary_part.toFixed(3) + " * i<br/>";
